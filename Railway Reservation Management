@@ -1,0 +1,78 @@
+import sqlite3 
+ 
+# Connect to SQLite database (or create one if it doesn't exist) conn = sqlite3.connect("railway_reservations.db") cursor = conn.cursor() 
+ 
+# Create tables if they don't exist cursor.execute(""" 
+CREATE TABLE IF NOT EXISTS trains (     train_id INTEGER PRIMARY KEY,     train_name TEXT NOT NULL,     origin TEXT NOT NULL,     destination TEXT NOT NULL,     departure_time TEXT NOT NULL 
+) 
+""") 
+ 
+cursor.execute(""" 
+CREATE TABLE IF NOT EXISTS reservations (     reservation_id INTEGER PRIMARY KEY,     train_id INTEGER,     passenger_name TEXT NOT NULL,     seat_number INTEGER, 
+    FOREIGN KEY (train_id) REFERENCES trains(train_id) 
+) 
+""") 
+# Function to add a new train def add_train(train_name, origin, destination, departure_time):     try: 
+        cursor.execute("INSERT INTO trains (train_name, origin, destination, departure_time) VALUES (?, ?, ?, ?)", 
+                       (train_name, origin, destination, departure_time))         conn.commit() 
+        print("Train added successfully!")     except sqlite3.Error as e: 
+        print(f"Error adding train: {e}") 
+ 
+# Function to make a reservation def make_reservation(train_id, passenger_name, seat_number):     try: 
+        # Check if train_id exists 
+        cursor.execute("SELECT COUNT(*) FROM trains WHERE train_id = ?", 
+(train_id,))         if cursor.fetchone()[0] == 0: 
+            print("Invalid train ID. Reservation not made.")             return 
+ 
+        cursor.execute("INSERT INTO reservations (train_id, passenger_name, seat_number) VALUES (?, ?, ?)", 
+                       (train_id, passenger_name, seat_number))         conn.commit() 
+        print("Reservation made successfully!")     except sqlite3.Error as e: 
+        print(f"Error making reservation: {e}") 
+# Function to cancel a reservation def cancel_reservation(reservation_id):     try: 
+        cursor.execute("DELETE FROM reservations WHERE reservation_id = ?", 
+(reservation_id,))         if cursor.rowcount == 0: 
+            print("Invalid reservation ID. No reservation canceled.")         else: 
+            conn.commit() 
+            print("Reservation canceled successfully!")     except sqlite3.Error as e: 
+        print(f"Error canceling reservation: {e}") 
+ 
+# Function to list all trains def list_trains():     try: 
+        cursor.execute("SELECT * FROM trains")         trains = cursor.fetchall()         if not trains: 
+            print("No trains available.")         else:             for train in trains:                 print(f"Train ID: {train[0]}, Name: {train[1]}, Origin: {train[2]}, Destination: {train[3]}, Departure: {train[4]}")     except sqlite3.Error as e: 
+        print(f"Error listing trains: {e}") 
+ # Function to list all reservations def list_reservations():     try: 
+        cursor.execute("SELECT * FROM reservations")         reservations = cursor.fetchall()         if not reservations: 
+            print("No reservations found.")         else:             for reservation in reservations: 
+                print(f"Reservation ID: {reservation[0]}, Train ID: {reservation[1]}, Passenger: {reservation[2]}, Seat: {reservation[3]}")     except sqlite3.Error as e: 
+        print(f"Error listing reservations: {e}") 
+ 
+# User Interface loop def main():     while True: 
+        print("\n--- Railway Reservation Management System ---")         print("1. Add a new train")         print("2. Make a reservation")         print("3. Cancel a reservation")         print("4. List all trains") 
+        print("5. List all reservations")         print("6. Exit") 
+ 
+        choice = input("Choose an option (1-6): ") 
+ 
+        if choice == "1": 
+            train_name = input("Enter train name: ")             origin = 
+input("Enter train origin: ")             destination = input("Enter train destination: ")             departure_time = input("Enter departure time: ")             add_train(train_name, origin, destination, departure_time) 
+ 
+        elif choice == "2": 
+            train_id = int(input("Enter train ID for reservation: "))             passenger_name = input("Enter passenger name: ")             seat_number = int(input("Enter seat number: "))             make_reservation(train_id, passenger_name, seat_number) 
+ 
+        elif choice == "3": 
+            reservation_id = int(input("Enter reservation ID to cancel: "))             cancel_reservation(reservation_id) 
+ 
+        elif choice == "4": 
+            list_trains() 
+ 
+        elif choice == "5": 
+            list_reservations() 
+ 
+        elif choice == "6": 
+            break 
+         else: 
+            print("Invalid option. Please try again.") 
+ # Close the database connection when done     conn.close() 
+ 
+if __name__ == "__main__": 
+    main() 
